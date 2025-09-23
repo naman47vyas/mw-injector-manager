@@ -139,150 +139,6 @@ func (m Model) Init() tea.Cmd {
 	return tea.EnterAltScreen
 }
 
-// Update implements tea.Model
-// func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-// 	switch msg := msg.(type) {
-// 	case tea.WindowSizeMsg:
-// 		m.width = msg.Width
-// 		m.height = msg.Height
-// 		// m.list.SetWidth(msg.Width - 4)
-// 		// m.list.SetHeight(msg.Height - 20) // Leave space for banner and status
-
-// 		// Calculate the vertical margin taken up by other components.
-// 		verticalMargin := 0
-
-// 		if m.showBanner {
-// 			banner := BannerStyle.Render(GetBannerArt())
-// 			subtitle := TitleStyle.Render(GetSubtitle())
-// 			version := InfoStyle.Render(GetVersionInfo())
-// 			// Add height of all banner-related components
-// 			verticalMargin += lipgloss.Height(banner) + lipgloss.Height(subtitle) + lipgloss.Height(version)
-// 		}
-
-// 		if m.showStatus {
-// 			statusContent := m.renderStatus()
-// 			statusBox := StatusBoxStyle.Render(statusContent)
-// 			verticalMargin += lipgloss.Height(statusBox)
-// 		}
-
-// 		help := HelpStyle.Render("...") // Content doesn't matter, just need the line count
-// 		verticalMargin += lipgloss.Height(help)
-
-// 		m.list.SetHeight(m.height - verticalMargin)
-// 		m.list.SetWidth(m.width - 4)
-// 		// Add height of status and help footer
-
-// 		// Set the list height to the remaining available space
-// 		m.list.SetHeight(m.height - verticalMargin)
-// 		m.list.SetWidth(m.width - 4) // Keep your horizontal padding
-// 		return m, nil
-
-// 	case tea.KeyMsg:
-// 		switch {
-// 		case key.Matches(msg, key.NewBinding(key.WithKeys("ctrl+c", "q"))):
-// 			return m, tea.Quit
-
-// 		case key.Matches(msg, key.NewBinding(key.WithKeys("b"))):
-// 			m.showBanner = !m.showBanner
-
-// 			return m, tea.WindowSize(tea.WindowSizeMsg{Width: m.width, Height: m.height})
-// 			// return m, nil
-
-// 		case key.Matches(msg, key.NewBinding(key.WithKeys("r"))):
-// 			// Refresh status
-// 			m.status.LastUpdate = time.Now()
-// 			return m, nil
-
-// 		case key.Matches(msg, key.NewBinding(key.WithKeys("r"))):
-// 			m.showStatus = !m.showStatus
-
-// 		case key.Matches(msg, key.NewBinding(key.WithKeys("enter", " "))):
-// 			if selectedItem, ok := m.list.SelectedItem().(MenuItem); ok {
-// 				m.state = selectedItem.action
-// 				// For now, just show a placeholder - you'd implement actual functionality
-// 				return m, nil
-// 			}
-// 		}
-
-// 		// Handle list navigation
-// 		var cmd tea.Cmd
-// 		m.list, cmd = m.list.Update(msg)
-// 		return m, cmd
-// 	}
-
-// 	return m, nil
-// }
-
-// tui.go -> Replace the entire Update function
-
-// func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-// 	switch msg := msg.(type) {
-// 	case tea.WindowSizeMsg:
-// 		m.width = msg.Width
-// 		m.height = msg.Height
-// 		verticalMargin := 0
-
-// 		if m.showBanner {
-// 			banner := BannerStyle.Render(GetBannerArt())
-// 			subtitle := TitleStyle.Render(GetSubtitle())
-// 			version := InfoStyle.Render(GetVersionInfo())
-// 			verticalMargin += lipgloss.Height(banner) + lipgloss.Height(subtitle) + lipgloss.Height(version)
-// 		}
-
-// 		// --- FIX #1: Make this calculation conditional ---
-// 		// Only subtract the status box's height if it is being shown.
-// 		if m.showStatus {
-// 			statusContent := m.renderStatus()
-// 			statusBox := StatusBoxStyle.Render(statusContent)
-// 			verticalMargin += lipgloss.Height(statusBox)
-// 		}
-// 		// --- END FIX #1 ---
-
-// 		help := HelpStyle.Render("...")
-// 		verticalMargin += lipgloss.Height(help)
-
-// 		m.list.SetHeight(m.height - verticalMargin)
-// 		m.list.SetWidth(m.width - 4)
-// 		return m, nil
-
-// 	case tea.KeyMsg:
-// 		switch {
-// 		case key.Matches(msg, key.NewBinding(key.WithKeys("ctrl+c", "q"))):
-// 			return m, tea.Quit
-
-// 		// --- FIX #2: Add the WindowSize command to trigger a redraw ---
-// 		case key.Matches(msg, key.NewBinding(key.WithKeys("b"))):
-// 			m.showBanner = !m.showBanner
-// 			return m, tea.WindowSizeMsg(tea.WindowSizeMsg{Width: m.width, Height: m.height})
-// 		// --- END FIX #2 ---
-
-// 		// --- FIX #3: Use the correct key ('s') and trigger a redraw ---
-// 		case key.Matches(msg, key.NewBinding(key.WithKeys("s"))):
-// 			m.showStatus = !m.showStatus
-// 			return m, tea.WindowSize(tea.WindowSizeMsg{Width: m.width, Height: m.height})
-// 		// --- END FIX #3 ---
-
-// 		case key.Matches(msg, key.NewBinding(key.WithKeys("r"))):
-// 			m.status.LastUpdate = time.Now()
-// 			return m, nil
-
-// 		case key.Matches(msg, key.NewBinding(key.WithKeys("enter", " "))):
-// 			if selectedItem, ok := m.list.SelectedItem().(MenuItem); ok {
-// 				m.state = selectedItem.action
-// 				return m, nil
-// 			}
-// 		}
-
-// 		var cmd tea.Cmd
-// 		m.list, cmd = m.list.Update(msg)
-// 		return m, cmd
-// 	}
-
-// 	return m, nil
-// }
-
-// tui.go -> Replace the entire Update function again
-
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -315,22 +171,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, key.NewBinding(key.WithKeys("ctrl+c", "q"))):
 			return m, tea.Quit
 
-		// --- CORRECTED CODE ---
 		case key.Matches(msg, key.NewBinding(key.WithKeys("b"))):
 			m.showBanner = !m.showBanner
-			// Return a function that returns the message. This is a valid tea.Cmd.
 			return m, func() tea.Msg {
 				return tea.WindowSizeMsg{Width: m.width, Height: m.height}
 			}
-		// --- END CORRECTION ---
 
-		// --- CORRECTED CODE ---
 		case key.Matches(msg, key.NewBinding(key.WithKeys("s"))):
 			m.showStatus = !m.showStatus
 			return m, func() tea.Msg {
 				return tea.WindowSizeMsg{Width: m.width, Height: m.height}
 			}
-		// --- END CORRECTION ---
 
 		case key.Matches(msg, key.NewBinding(key.WithKeys("r"))):
 			m.status.LastUpdate = time.Now()

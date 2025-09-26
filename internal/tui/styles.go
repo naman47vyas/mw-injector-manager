@@ -27,12 +27,33 @@ var (
 			Align(lipgloss.Center).
 			Padding(1, 0)
 
-	// Status box style
+	// // Status box style
 	StatusBoxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(PrimaryColor).
 			Padding(1, 2).
 			Margin(1, 0)
+	// Styles for the content inside the status box ---
+	StatusHeaderStyle = lipgloss.NewStyle().Foreground(SecondaryColor).Bold(true)
+	StatusKeyStyle    = lipgloss.NewStyle().Foreground(DimColor)
+	StatusValueStyle  = lipgloss.NewStyle().Foreground(TextColor)
+
+	// Styles for the dynamic service table ---
+	TableHeaderStyle = lipgloss.NewStyle().
+				Bold(true).
+				Foreground(SecondaryColor)
+
+	HealthyStyle = lipgloss.NewStyle().Foreground(AccentColor)  // Uses your green
+	ErrorStyle   = lipgloss.NewStyle().Foreground(ErrorColor)   // Uses your red
+	WarningStyle = lipgloss.NewStyle().Foreground(WarningColor) // Uses your yellow
+	DefaultStyle = lipgloss.NewStyle().Foreground(TextColor)    // Uses your white
+
+	TableBoxStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder(), true).
+			BorderForeground(DimColor).
+			Padding(0, 2)
+
+	TableSeparatorStyle = lipgloss.NewStyle().Foreground(DimColor)
 
 	// Menu item styles
 	MenuItemStyle = lipgloss.NewStyle().

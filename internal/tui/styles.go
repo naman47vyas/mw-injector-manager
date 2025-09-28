@@ -33,6 +33,7 @@ var (
 			BorderForeground(PrimaryColor).
 			Padding(1, 2).
 			Margin(1, 0)
+
 	// Styles for the content inside the status box ---
 	StatusHeaderStyle = lipgloss.NewStyle().Foreground(SecondaryColor).Bold(true)
 	StatusKeyStyle    = lipgloss.NewStyle().Foreground(DimColor)

@@ -75,4 +75,25 @@ var (
 			Foreground(DimColor).
 			Align(lipgloss.Center).
 			Margin(1, 0)
+	HeaderStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("212"))
+
+	SelectedRowStyle = lipgloss.NewStyle().
+				Bold(true).
+				Background(lipgloss.Color("236")).
+				Foreground(lipgloss.Color("212"))
+
+	// For the detailed process view
+	KeyStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("202")).
+			Width(18)
+
+	ValueStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("252"))
+
+	SubtleStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("241")).
+			Italic(true)
 )

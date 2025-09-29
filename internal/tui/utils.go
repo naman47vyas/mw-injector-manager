@@ -2,8 +2,11 @@ package tui
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/naman47vyas/mw-injector-manager/pkg/discovery"
 )
 
 // ClearScreen clears the terminal screen
@@ -132,4 +135,35 @@ func padToVisualWidth(s string, width int) string {
 
 	padding := width - currentWidth
 	return s + strings.Repeat(" ", padding)
+}
+
+func getStatusString(proc discovery.JavaProcess) string {
+	if proc.HasJavaAgent {
+		if proc.IsMiddlewareAgent {
+			return "✅ MW"
+		}
+		return "⚙️ OTel"
+	}
+	return "❌ None"
+}
+
+func getServerPort(proc discovery.JavaProcess) string {
+	// Regex to find server.port in various formats
+	re := regexp.MustCompile(`-Dserver\.port=(\d+)`)
+	for _, opt := range proc.JVMOptions {
+		matches := re.FindStringSubmatch(opt)
+		if len(matches) > 1 {
+			return matches[1]
+		}
+	}
+	return "default"
+}
+
+func getEnhancedServiceName(proc discovery.JavaProcess) string {
+	port := getServerPort(proc)
+	baseName := strings.TrimSuffix(proc.JarFile, ".jar")
+	if port != "default" {
+		return fmt.Sprintf("%s:%s", baseName, port)
+	}
+	return baseName
 }

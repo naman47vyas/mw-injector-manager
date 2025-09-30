@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/k0kubun/pp"
 	"github.com/naman47vyas/mw-injector-manager/pkg/discovery"
 )
 
@@ -228,7 +229,7 @@ func printSummary(processes []discovery.JavaProcess) {
 			}
 		}
 	}
-	// pp.Println("Processes: ", processes)
+	pp.Println("Processes: ", processes)
 	fmt.Println("📊 Discovery Summary:")
 	fmt.Printf("   Total Java Processes: %d\n", totalProcesses)
 	fmt.Printf("   Instrumented: %d (%.1f%%)\n", instrumentedCount,

@@ -8,7 +8,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// View implements tea.Model
 func (m Model) View() string {
 	var sections []string
 
@@ -25,29 +24,42 @@ func (m Model) View() string {
 	}
 
 	// Main content based on state
+	var mainContent string
 	switch m.state {
 	case StateMain:
-		sections = append(sections, m.list.View())
+		mainContent = m.list.View()
 	case StateServiceList:
-		sections = append(sections, m.renderServiceList())
-	// --- New: Render process options menu ---
+		mainContent = m.renderServiceList()
 	case StateProcessOptions:
-		sections = append(sections, m.processOptionsList.View())
-	// --- New: Render detailed process view ---
+		mainContent = m.processOptionsList.View()
 	case StateProcessDetailView:
-		sections = append(sections, m.renderProcessDetailView())
+		mainContent = m.renderProcessDetailView()
+	case StateConfigureInstrumentation:
+		mainContent = m.renderConfigurationForm()
 	case StateHealthCheck:
-		sections = append(sections, m.renderHealthCheck())
+		mainContent = m.renderHealthCheck()
 	case StateHelp:
-		sections = append(sections, m.renderHelp())
+		mainContent = m.renderHelp()
 	default:
-		sections = append(sections, "Feature coming soon...")
+		mainContent = "Feature coming soon..."
 	}
+
+	sections = append(sections, mainContent)
 
 	help := HelpStyle.Render("Press 'q' to quit • 'r' to refresh • 'backspace' to go back")
 	sections = append(sections, help)
 
-	return lipgloss.JoinVertical(lipgloss.Left, sections...)
+	// Join all sections and ensure proper height to fill screen
+	content := lipgloss.JoinVertical(lipgloss.Left, sections...)
+
+	// Pad with empty lines if needed to clear residual content
+	contentHeight := lipgloss.Height(content)
+	if m.height > contentHeight {
+		padding := strings.Repeat("\n", m.height-contentHeight)
+		content += padding
+	}
+
+	return content
 }
 
 func (m Model) renderStatus() string {
@@ -239,4 +251,172 @@ func (m Model) renderHelp() string {
 	}
 
 	return strings.Join(content, "\n")
+}
+
+func (m Model) renderConfigurationForm() string {
+	if m.selectedProcessIndex < 0 || m.selectedProcessIndex >= len(m.status.Processes) {
+		return "Error: No process selected."
+	}
+
+	proc := m.status.Processes[m.selectedProcessIndex]
+
+	sections := []string{
+		TitleStyle.Render(fmt.Sprintf("🛠️ Configure Instrumentation - %s (PID: %d)",
+			getEnhancedServiceName(proc), proc.ProcessPID)),
+		"",
+	}
+
+	// Section tabs
+	tabs := []string{"[Required]", "[Features]", "[Advanced]", "[Preview]"}
+	for i, tab := range tabs {
+		style := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+		if (i == 0 && m.configFormSection == "required") ||
+			(i == 1 && m.configFormSection == "features") ||
+			(i == 2 && m.configFormSection == "advanced") ||
+			(i == 3 && m.configFormSection == "preview") {
+			style = style.Bold(true).Foreground(lipgloss.Color("212"))
+		}
+		tabs[i] = style.Render(tab)
+	}
+	sections = append(sections, strings.Join(tabs, " "))
+	sections = append(sections, "")
+
+	// Render based on section
+	switch m.configFormSection {
+	case "required":
+		sections = append(sections, m.renderRequiredSection()...)
+	case "features":
+		sections = append(sections, m.renderFeaturesSection()...)
+	case "advanced":
+		sections = append(sections, m.renderAdvancedSection()...)
+	case "preview":
+		sections = append(sections, m.renderPreviewSection()...)
+	}
+
+	sections = append(sections, "")
+	sections = append(sections, HelpStyle.Render(
+		"Tab: Next field • Shift+Tab: Previous • Space: Toggle • →/←: Switch section • Enter: Save • Esc: Cancel"))
+
+	return strings.Join(sections, "\n")
+}
+
+func (m Model) renderRequiredSection() []string {
+	lines := []string{
+		SubtleStyle.Render("Required Settings"),
+		"",
+	}
+
+	fields := []struct {
+		label string
+		input int
+		desc  string
+	}{
+		{"MW_API_KEY", 0, "API key from Middleware.io dashboard"},
+		{"MW_TARGET", 1, "Target URL (e.g., https://YOUR_TENANT.middleware.io:4317)"},
+		{"MW_SERVICE_NAME", 2, "Service identifier for APM"},
+	}
+
+	for _, field := range fields {
+		style := KeyStyle
+		if m.configFormFocusIndex == field.input {
+			style = style.Copy().Foreground(lipgloss.Color("212")).Bold(true)
+		}
+
+		lines = append(lines,
+			style.Render(field.label+":"),
+			m.configFormInputs[field.input].View(),
+			lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Italic(true).Render("  "+field.desc),
+			"",
+		)
+	}
+
+	return lines
+}
+
+func (m Model) renderFeaturesSection() []string {
+	lines := []string{
+		SubtleStyle.Render("Feature Toggles"),
+		"",
+	}
+
+	features := []struct {
+		label   string
+		index   int
+		desc    string
+		enabled bool
+	}{
+		{"Collect Traces", 0, "Distributed tracing data", m.configToEdit.MWAPMCollectTraces},
+		{"Collect Metrics", 1, "Performance metrics", m.configToEdit.MWAPMCollectMetrics},
+		{"Collect Logs", 2, "Application logs", m.configToEdit.MWAPMCollectLogs},
+		{"Collect Profiling", 3, "Continuous profiling", m.configToEdit.MWAPMCollectProfiling},
+		{"Enable GZIP", 4, "Compress telemetry data", m.configToEdit.MWEnableGzip},
+	}
+
+	for i, feature := range features {
+		checkbox := "[ ]"
+		if feature.enabled {
+			checkbox = "[✓]"
+		}
+
+		style := lipgloss.NewStyle()
+		if m.configFormFocusIndex == 3+i { // Offset by number of text inputs
+			style = style.Bold(true).Foreground(lipgloss.Color("212"))
+		}
+
+		lines = append(lines,
+			style.Render(fmt.Sprintf("  %s %s", checkbox, feature.label)),
+			lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Italic(true).Render("      "+feature.desc),
+		)
+	}
+
+	return lines
+}
+
+func (m Model) renderAdvancedSection() []string {
+	lines := []string{
+		SubtleStyle.Render("Advanced Settings"),
+		"",
+	}
+
+	lines = append(lines,
+		KeyStyle.Render("Log Level:"),
+		m.configFormInputs[3].View(),
+		"",
+		KeyStyle.Render("Custom Resource Attributes:"),
+		m.configFormInputs[4].View(),
+		lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Italic(true).Render("  Format: key1=value1,key2=value2"),
+		"",
+		KeyStyle.Render("OTEL Trace Sampler:"),
+		m.configFormInputs[5].View(),
+		lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Italic(true).Render("  Options: always_on, parentbased_traceidratio, etc."),
+		"",
+		KeyStyle.Render("Sampling Rate:"),
+		m.configFormInputs[6].View(),
+		lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Italic(true).Render("  0.0 to 1.0 (e.g., 0.1 = 10%)"),
+	)
+
+	return lines
+}
+
+func (m Model) renderPreviewSection() []string {
+	lines := []string{
+		SubtleStyle.Render("Configuration Preview"),
+		"",
+		lipgloss.NewStyle().Foreground(lipgloss.Color("46")).Render("Command to run this service:"),
+		"",
+	}
+
+	// Generate command preview
+	cmdLine := m.configToEdit.ToJavaCommandLine(m.status.Processes[m.selectedProcessIndex].JarFile)
+
+	// Wrap in code block style
+	codeStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("240")).
+		Padding(1).
+		Foreground(lipgloss.Color("252"))
+
+	lines = append(lines, codeStyle.Render(cmdLine))
+
+	return lines
 }

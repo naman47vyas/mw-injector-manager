@@ -3,14 +3,12 @@ package discovery
 import (
 	"context"
 	"fmt"
-	// "os"
 	"os/user"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/k0kubun/pp"
 	"github.com/shirou/gopsutil/v4/process"
 )
 
@@ -42,8 +40,8 @@ func (d *discoverer) DiscoverWithOptions(ctx context.Context, opts DiscoveryOpti
 
 	// Filter for Java processes first to reduce workload
 	javaProcesses := d.filterJavaProcesses(allProcesses)
-	pp.Println("JAVA PROCESSES: ")
-	pp.Println(javaProcesses)
+	// pp.Println("JAVA PROCESSES: ")
+	// pp.Println(javaProcesses)
 	// Process concurrently with worker pool
 	return d.processWithWorkerPool(ctx, javaProcesses, opts)
 }

@@ -8,6 +8,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/naman47vyas/mw-injector-manager/pkg/config"
 	"github.com/naman47vyas/mw-injector-manager/pkg/discovery"
 )
 
@@ -23,6 +25,7 @@ const (
 	// --- New States Added ---
 	StateProcessOptions    // State for showing options for a selected process
 	StateProcessDetailView // State for showing the detailed view of a process
+	StateConfigureInstrumentation
 )
 
 // MenuItem represents a main menu item
@@ -73,7 +76,12 @@ type Model struct {
 	cancel               context.CancelFunc
 	selectedProcessIndex int // Track which process is selected in the list
 	// --- New: List for process options ---
-	processOptionsList list.Model
+	processOptionsList   list.Model
+	configFormInputs     []textinput.Model
+	configFormToggles    []bool
+	configFormFocusIndex int
+	configToEdit         *config.ProcessConfiguration
+	configFormSection    string
 }
 
 // NewModel creates a new model instance

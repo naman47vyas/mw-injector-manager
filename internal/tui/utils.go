@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 	"unicode/utf8"
 
+	"github.com/charmbracelet/bubbles/textinput"
+	config "github.com/naman47vyas/mw-injector-manager/pkg/config"
 	"github.com/naman47vyas/mw-injector-manager/pkg/discovery"
 )
 
@@ -166,4 +169,140 @@ func getEnhancedServiceName(proc discovery.JavaProcess) string {
 		return fmt.Sprintf("%s:%s", baseName, port)
 	}
 	return baseName
+}
+
+// func (m *Model) saveConfiguration() error {
+// 	proc := m.status.Processes[m.selectedProcessIndex]
+
+// 	config := config.ProcessConfiguration{
+// 		PID:                 proc.ProcessPID,
+// 		ServiceName:         proc.ServiceName,
+// 		MWAPIKey:            m.configFormInputs[0].Value(),
+// 		MWTarget:            m.configFormInputs[1].Value(),
+// 		MWServiceName:       m.configFormInputs[2].Value(),
+// 		MWLogLevel:          m.configFormInputs[3].Value(),
+// 		MWAPMCollectTraces:  m.configToEdit.MWAPMCollectTraces,
+// 		MWAPMCollectMetrics: m.configToEdit.MWAPMCollectMetrics,
+// 		MWAPMCollectLogs:    m.configToEdit.MWAPMCollectLogs,
+// 		CreatedAt:           time.Now(),
+// 		UpdatedAt:           time.Now(),
+// 	}
+
+// 	// Save to file - you'll implement this next
+// 	return saveConfigToFile(config)
+// }
+
+// Sync input values back to the config struct
+func (m *Model) syncInputsToConfig() {
+	m.configToEdit.MWAPIKey = m.configFormInputs[0].Value()
+	m.configToEdit.MWTarget = m.configFormInputs[1].Value()
+	m.configToEdit.MWServiceName = m.configFormInputs[2].Value()
+	m.configToEdit.MWLogLevel = m.configFormInputs[3].Value()
+	m.configToEdit.MWCustomResourceAttribute = m.configFormInputs[4].Value()
+	m.configToEdit.OtelTracesSampler = m.configFormInputs[5].Value()
+	m.configToEdit.OtelTracesSamplerArg = m.configFormInputs[6].Value()
+}
+
+//------------------
+
+var configPersistence = config.NewConfigPersistence()
+
+// Update saveConfiguration function
+func (m *Model) saveConfiguration() error {
+	// Sync current input values to config
+	m.syncInputsToConfig()
+
+	// Validate configuration
+	if err := m.configToEdit.Validate(); err != nil {
+		return fmt.Errorf("validation failed: %w", err)
+	}
+
+	// Update timestamps
+	m.configToEdit.UpdatedAt = time.Now()
+	if m.configToEdit.CreatedAt.IsZero() {
+		m.configToEdit.CreatedAt = time.Now()
+	}
+
+	// Save to file using persistence layer
+	if err := configPersistence.Save(m.configToEdit); err != nil {
+		return fmt.Errorf("failed to save configuration: %w", err)
+	}
+
+	return nil
+}
+
+// Add function to load existing configuration
+func (m *Model) loadExistingConfiguration() (*config.ProcessConfiguration, error) {
+	proc := m.status.Processes[m.selectedProcessIndex]
+
+	// Try to load existing config
+	existingConfig, err := configPersistence.Load(proc.ServiceName)
+	if err != nil {
+		// No existing config, return default
+		return nil, nil
+	}
+
+	return existingConfig, nil
+}
+
+// Update initializeConfigForm to load existing config if available
+func (m *Model) initializeConfigForm() {
+	proc := m.status.Processes[m.selectedProcessIndex]
+
+	// Try to load existing config first
+	existingConfig, err := m.loadExistingConfiguration()
+	if err == nil && existingConfig != nil {
+		// Use existing config
+		m.configToEdit = existingConfig
+	} else {
+		// Create default config
+		defaultConfig := config.DefaultConfiguration()
+		defaultConfig.PID = proc.ProcessPID
+		defaultConfig.ServiceName = proc.ServiceName
+		defaultConfig.MWServiceName = proc.ServiceName
+		defaultConfig.JavaAgentPath = proc.JavaAgentPath
+		m.configToEdit = &defaultConfig
+	}
+
+	// Initialize text inputs (7 inputs total)
+	m.configFormInputs = make([]textinput.Model, 7)
+
+	inputs := []struct {
+		placeholder string
+		value       string
+	}{
+		{"MW_API_KEY", m.configToEdit.MWAPIKey},
+		{"MW_TARGET", m.configToEdit.MWTarget},
+		{"MW_SERVICE_NAME", m.configToEdit.MWServiceName},
+		{"MW_LOG_LEVEL", m.configToEdit.MWLogLevel},
+		{"MW_CUSTOM_RESOURCE_ATTRIBUTE", m.configToEdit.MWCustomResourceAttribute},
+		{"OTEL_TRACES_SAMPLER", m.configToEdit.OtelTracesSampler},
+		{"OTEL_TRACES_SAMPLER_ARG", m.configToEdit.OtelTracesSamplerArg},
+	}
+
+	for i, input := range inputs {
+		ti := textinput.New()
+		ti.Placeholder = input.placeholder
+		ti.SetValue(input.value)
+		ti.CharLimit = 256
+
+		if i == 0 {
+			ti.Focus()
+		}
+
+		m.configFormInputs[i] = ti
+	}
+
+	m.configFormFocusIndex = 0
+	m.configFormSection = "required"
+}
+
+func (m *Model) focusConfigInput() {
+	for i := range m.configFormInputs {
+		if i == m.configFormFocusIndex {
+			m.configFormInputs[i].Focus()
+		} else {
+			m.configFormInputs[i].Blur()
+		}
+	}
 }
